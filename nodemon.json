@@ -1,0 +1,6 @@
+{
+  "watch": ["src", "public", "database", "package.json"],
+  "ext": "js,json,html,css,sql",
+  "ignore": ["storage/**", "node_modules/**", ".git/**"],
+  "delay": "500ms"
+}

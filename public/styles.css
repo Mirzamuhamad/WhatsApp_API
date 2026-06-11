@@ -1,0 +1,169 @@
+:root {
+  --surface: #ffffff;
+  --line: #d8dee5;
+  --ink: #1c252e;
+  --muted: #687482;
+  --wash: #f5f7f8;
+  --accent: #178b57;
+}
+
+body {
+  min-height: 100vh;
+  color: var(--ink);
+  background: var(--wash);
+}
+
+.global-loader {
+  position: sticky;
+  top: 57px;
+  z-index: 1030;
+  height: 3px;
+  overflow: hidden;
+  background: rgba(23, 139, 87, 0.12);
+}
+
+.global-loader-bar {
+  width: 42%;
+  height: 100%;
+  background: var(--accent);
+  animation: loader-slide 1s ease-in-out infinite;
+}
+
+@keyframes loader-slide {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(240%);
+  }
+}
+
+.navbar-brand {
+  letter-spacing: 0;
+}
+
+.toolbar,
+.table-shell,
+.qr-panel,
+.form-panel {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.table th {
+  color: var(--muted);
+  font-size: 0.78rem;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.status-dot {
+  display: inline-block;
+  width: 0.58rem;
+  height: 0.58rem;
+  margin-right: 0.4rem;
+  border-radius: 50%;
+  background: #8b97a4;
+}
+
+.status-connected {
+  background: var(--accent);
+}
+
+.status-qr_required,
+.status-connecting {
+  background: #d89c1d;
+}
+
+.status-disconnected {
+  background: #d14a3d;
+}
+
+.qr-stage {
+  display: grid;
+  place-items: center;
+  min-height: 330px;
+  padding: 1rem;
+}
+
+.qr-image {
+  width: min(300px, 90%);
+  aspect-ratio: 1;
+  object-fit: contain;
+}
+
+.list-group-item {
+  word-break: break-word;
+}
+
+.message-cell {
+  max-width: 42rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.pager-controls {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.pager-size {
+  width: 5.5rem;
+}
+
+#broadcastDelay {
+  min-width: 6rem;
+}
+
+.loading-row td {
+  height: 4rem;
+  color: var(--muted);
+  text-align: center;
+}
+
+.btn .spinner-border {
+  width: 0.9rem;
+  height: 0.9rem;
+}
+
+.api-list {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.api-item {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fff;
+  overflow: hidden;
+}
+
+.api-item-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.65rem 0.75rem;
+  border-bottom: 1px solid var(--line);
+}
+
+.api-command {
+  margin: 0;
+  padding: 0.75rem;
+  max-height: 14rem;
+  overflow: auto;
+  color: #17212b;
+  background: #f7f9fb;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+@media (max-width: 720px) {
+  .table {
+    min-width: 760px;
+  }
+}
