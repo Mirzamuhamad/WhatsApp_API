@@ -36,16 +36,78 @@ const el = {
   messageNextPage: document.getElementById('messageNextPage'),
   editContactId: document.getElementById('editContactId'),
   editContactName: document.getElementById('editContactName'),
-  editContactPhone: document.getElementById('editContactPhone')
+  editContactPhone: document.getElementById('editContactPhone'),
+  sessionCount: document.getElementById('sessionCount'),
+  connectedCount: document.getElementById('connectedCount'),
+  contactCount: document.getElementById('contactCount'),
+  messageCount: document.getElementById('messageCount'),
+  dashboardHero: document.getElementById('dashboardHero'),
+  confirmModal: document.getElementById('confirmModal'),
+  confirmModalTitle: document.getElementById('confirmModalTitle'),
+  confirmModalMessage: document.getElementById('confirmModalMessage'),
+  confirmModalConfirm: document.getElementById('confirmModalConfirm')
 };
 
 el.apiKeyInput.value = state.apiKey;
 el.contactPageSize.value = state.contactPageSize;
 el.messagePageSize.value = state.messagePageSize;
 
+const viewLinks = document.querySelectorAll('[data-view-target]');
+const dashboardViews = document.querySelectorAll('[data-dashboard-view]');
+
+function showDashboardView(viewId) {
+  dashboardViews.forEach((view) => {
+    view.hidden = view.id !== viewId;
+    view.classList.toggle('active', view.id === viewId);
+  });
+  viewLinks.forEach((link) => {
+    link.classList.toggle('active', link.dataset.viewTarget === viewId);
+  });
+  el.dashboardHero.hidden = viewId !== 'dashboardView';
+
+  const nav = document.getElementById('mainNav');
+  const navCollapse = bootstrap.Collapse.getInstance(nav);
+  navCollapse?.hide();
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+viewLinks.forEach((link) => {
+  link.addEventListener('click', () => showDashboardView(link.dataset.viewTarget));
+});
+
 function notify(message) {
   document.getElementById('toastBody').textContent = message;
   toast.show();
+}
+
+function confirmAction({ title, message, confirmLabel = 'Clear', confirmClass = 'btn-danger' }) {
+  return new Promise((resolve) => {
+    const modal = bootstrap.Modal.getOrCreateInstance(el.confirmModal);
+    const confirmButton = el.confirmModalConfirm;
+    const baseClasses = 'btn';
+
+    el.confirmModalTitle.textContent = title;
+    el.confirmModalMessage.textContent = message;
+    confirmButton.textContent = confirmLabel;
+    confirmButton.className = `${baseClasses} ${confirmClass}`;
+
+    const cleanup = (result) => {
+      confirmButton.removeEventListener('click', onConfirm);
+      el.confirmModal.removeEventListener('hidden.bs.modal', onCancel);
+      resolve(result);
+    };
+
+    const onConfirm = () => {
+      modal.hide();
+      cleanup(true);
+    };
+
+    const onCancel = () => cleanup(false);
+
+    confirmButton.addEventListener('click', onConfirm, { once: true });
+    el.confirmModal.addEventListener('hidden.bs.modal', onCancel, { once: true });
+    modal.show();
+  });
 }
 
 function escapeHtml(value) {
@@ -356,6 +418,8 @@ async function loadSessions() {
   setRowsLoading(el.sessionRows, 5, 'Loading sessions...');
   const { data } = await api('/api/sessions');
   state.sessions = data;
+  el.sessionCount.textContent = data.length;
+  el.connectedCount.textContent = data.filter((session) => session.status === 'connected').length;
   renderSessionOptions();
   el.sessionRows.innerHTML = data
     .map(
@@ -388,6 +452,7 @@ async function loadMessages() {
   const { data, total, page, perPage } = await api(
     `/api/messages?${paginationQuery(state.messagePage, state.messagePageSize)}`
   );
+  el.messageCount.textContent = total || 0;
   state.messagePage = Number(page) || state.messagePage;
   state.messagePageSize = String(perPage || state.messagePageSize);
 
@@ -445,6 +510,7 @@ async function loadContacts() {
   const { data, total, page, perPage } = await api(
     `/api/contacts?${paginationQuery(state.contactPage, state.contactPageSize)}`
   );
+  el.contactCount.textContent = total || 0;
   state.contactPage = Number(page) || state.contactPage;
   state.contactPageSize = String(perPage || state.contactPageSize);
 
@@ -795,7 +861,12 @@ document.getElementById('exportContacts').addEventListener('click', (event) => {
   ).catch((error) => notify(error.message));
 });
 document.getElementById('clearContacts').addEventListener('click', async () => {
-  if (!confirm('Hapus semua kontak?')) return;
+  const confirmed = await confirmAction({
+    title: 'Clear Contacts',
+    message: 'Hapus semua kontak? Data kontak yang sudah dihapus tidak bisa dikembalikan dari dashboard.',
+    confirmLabel: 'Clear Contacts'
+  });
+  if (!confirmed) return;
   const button = document.getElementById('clearContacts');
   try {
     await withButtonLoading(button, 'Clearing...', async () => {
@@ -809,7 +880,12 @@ document.getElementById('clearContacts').addEventListener('click', async () => {
   }
 });
 document.getElementById('clearMessages').addEventListener('click', async () => {
-  if (!confirm('Hapus semua message log?')) return;
+  const confirmed = await confirmAction({
+    title: 'Clear Message Log',
+    message: 'Hapus semua message log? Riwayat log yang sudah dihapus tidak bisa dikembalikan dari dashboard.',
+    confirmLabel: 'Clear Log'
+  });
+  if (!confirmed) return;
   const button = document.getElementById('clearMessages');
   try {
     await withButtonLoading(button, 'Clearing...', async () => {
