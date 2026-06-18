@@ -15,6 +15,7 @@ const toast = new bootstrap.Toast(document.getElementById('appToast'));
 const el = {
   socketState: document.getElementById('socketState'),
   sessionRows: document.getElementById('sessionRows'),
+  sessionOptions: document.getElementById('sessionOptions'),
   messageRows: document.getElementById('messageRows'),
   contactRows: document.getElementById('contactRows'),
   webhookList: document.getElementById('webhookList'),
@@ -129,6 +130,16 @@ function updatePager(kind, total, count) {
   info.textContent = `${start}-${end} of ${total} | Page ${page}/${pages}`;
   prev.disabled = page <= 1;
   next.disabled = page >= pages;
+}
+
+function renderSessionOptions() {
+  el.sessionOptions.innerHTML = state.sessions
+    .map((session) => {
+      const phone = session.phone_number ? ` | ${session.phone_number}` : '';
+      const label = `${session.session_name} | ${session.status}${phone}`;
+      return `<option value="${escapeHtml(session.id)}" label="${escapeHtml(label)}"></option>`;
+    })
+    .join('');
 }
 
 function authHeaders() {
@@ -345,6 +356,7 @@ async function loadSessions() {
   setRowsLoading(el.sessionRows, 5, 'Loading sessions...');
   const { data } = await api('/api/sessions');
   state.sessions = data;
+  renderSessionOptions();
   el.sessionRows.innerHTML = data
     .map(
       (session) => `

@@ -30,6 +30,8 @@ npm run dev
 
 Dashboard tersedia di `http://localhost:3000`.
 
+Di dashboard, kolom `session` pada Send Message dan Broadcast bisa diketik manual atau dipilih dari dropdown yang otomatis diambil dari daftar sessions.
+
 > Catatan: aplikasi akan membuat database `wa_gateway` dan tabel yang diperlukan jika user MySQL punya izin `CREATE DATABASE`.
 > Jika `node` dari PATH Windows bermasalah di Laragon, jalankan dari PowerShell dengan path Node Laragon:
 >

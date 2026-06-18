@@ -11,6 +11,14 @@ function listOptions(options, fallbackLimit) {
   };
 }
 
+function paginationClause(limit, offset) {
+  const parsedLimit = Number.parseInt(limit, 10);
+  const parsedOffset = Number.parseInt(offset, 10);
+  const safeLimit = Number.isFinite(parsedLimit) && parsedLimit > 0 ? parsedLimit : 1000;
+  const safeOffset = Number.isFinite(parsedOffset) && parsedOffset > 0 ? parsedOffset : 0;
+  return ` LIMIT ${safeLimit} OFFSET ${safeOffset}`;
+}
+
 export async function listSessions() {
   const [rows] = await db().query(
     `SELECT id, session_name, phone_number, status, last_activity, created_at, updated_at
@@ -84,7 +92,7 @@ export async function listMessages(options = 100) {
   const [rows] =
     limit === null
       ? await db().query(query)
-      : await db().execute(`${query} LIMIT ? OFFSET ?`, [Number(limit), Number(offset)]);
+      : await db().query(`${query}${paginationClause(limit, offset)}`);
   return rows;
 }
 
@@ -117,7 +125,7 @@ export async function listContacts(options = 1000) {
   const [rows] =
     limit === null
       ? await db().query(query)
-      : await db().execute(`${query} LIMIT ? OFFSET ?`, [Number(limit), Number(offset)]);
+      : await db().query(`${query}${paginationClause(limit, offset)}`);
   return rows;
 }
 
