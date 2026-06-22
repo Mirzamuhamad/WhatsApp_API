@@ -3,7 +3,10 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>WA Gateway</title>
+    <title>WA Gateway Dashboard</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Mulish:wght@400;500;600&display=swap" rel="stylesheet" />
     <link
       href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
       rel="stylesheet"
@@ -11,261 +14,343 @@
     <link rel="stylesheet" href="/styles.css" />
   </head>
   <body>
-    <nav class="navbar navbar-expand-lg bg-white border-bottom sticky-top">
+    <nav class="navbar navbar-expand-lg dashboard-navbar sticky-top">
       <div class="container-fluid px-3 px-lg-4">
-        <span class="navbar-brand fw-semibold">WA Gateway</span>
-        <div class="d-flex align-items-center gap-2 ms-auto">
-          <span id="socketState" class="badge text-bg-secondary">offline</span>
-          <button class="btn btn-outline-secondary btn-sm" data-bs-toggle="modal" data-bs-target="#authModal">
+        <a class="navbar-brand brand-lockup" href="#" aria-label="WA Gateway">
+          <span class="brand-mark">WA</span>
+          <span>
+            <span class="brand-title">WA Gateway</span>
+            <span class="brand-subtitle">Dashboard API</span>
+          </span>
+        </a>
+        <div class="d-flex align-items-center gap-2 order-lg-3">
+          <span id="socketState" class="badge status-badge text-bg-secondary">offline</span>
+          <button class="btn btn-outline-success btn-sm auth-button" data-bs-toggle="modal" data-bs-target="#authModal">
             Auth
           </button>
+          <button
+            class="navbar-toggler"
+            type="button"
+            data-bs-toggle="collapse"
+            data-bs-target="#mainNav"
+            aria-controls="mainNav"
+            aria-expanded="false"
+            aria-label="Toggle navigation"
+          >
+            <span class="navbar-toggler-icon"></span>
+          </button>
+        </div>
+        <div id="mainNav" class="collapse navbar-collapse order-lg-2">
+          <ul class="navbar-nav nav-pills dashboard-menu mx-lg-auto mt-3 mt-lg-0">
+            <li class="nav-item">
+              <button class="nav-link active" type="button" data-view-target="dashboardView">Dashboard</button>
+            </li>
+            <li class="nav-item">
+              <button class="nav-link" type="button" data-view-target="broadcastView">Broadcast</button>
+            </li>
+            <li class="nav-item">
+              <button class="nav-link" type="button" data-view-target="logView">Log API</button>
+            </li>
+          </ul>
         </div>
       </div>
     </nav>
+
     <div id="globalLoader" class="global-loader d-none" aria-hidden="true">
       <div class="global-loader-bar"></div>
     </div>
 
-    <main class="container-fluid px-3 px-lg-4 py-4">
-      <div class="row g-4">
-        <section class="col-12 col-xl-7">
-          <div class="toolbar mb-3">
-            <form id="createSessionForm" class="row g-2 align-items-center">
-              <div class="col-12 col-md">
-                <input
-                  id="sessionName"
-                  class="form-control"
-                  type="text"
-                  placeholder="Nama session"
-                  autocomplete="off"
-                />
+    <main class="app-shell">
+      <header id="dashboardHero" class="dashboard-hero">
+        <div>
+          <p class="eyebrow">Self Hosted WhatsApp API</p>
+          <h1>Kelola session, broadcast, dan log API dari satu dashboard.</h1>
+        </div>
+        <div class="quick-stats" aria-label="Ringkasan gateway">
+          <div class="stat-card">
+            <span class="stat-label">Sessions</span>
+            <strong id="sessionCount">0</strong>
+          </div>
+          <div class="stat-card">
+            <span class="stat-label">Connected</span>
+            <strong id="connectedCount">0</strong>
+          </div>
+          <div class="stat-card">
+            <span class="stat-label">Contacts</span>
+            <strong id="contactCount">0</strong>
+          </div>
+          <div class="stat-card">
+            <span class="stat-label">Logs</span>
+            <strong id="messageCount">0</strong>
+          </div>
+        </div>
+      </header>
+
+      <section id="dashboardView" class="dashboard-view active" data-dashboard-view>
+        <div class="row g-3 g-xl-4">
+          <section class="col-12 col-xl-8 col-xxl-9">
+            <div class="toolbar mb-3">
+              <div class="panel-heading">
+                <div>
+                  <p class="section-kicker">Session Manager</p>
+                  <h2>Create Session</h2>
+                </div>
               </div>
-              <div class="col-12 col-md-auto">
-                <button class="btn btn-success w-100" type="submit">Create Session</button>
-              </div>
-            </form>
-          </div>
-
-          <div class="table-shell">
-            <div class="d-flex justify-content-between align-items-center px-3 py-2 border-bottom">
-              <h1 class="h6 mb-0">Sessions</h1>
-              <button id="refreshSessions" class="btn btn-outline-secondary btn-sm" type="button">Refresh</button>
-            </div>
-            <div class="table-responsive">
-              <table class="table table-hover align-middle mb-0">
-                <thead>
-                  <tr>
-                    <th>Session</th>
-                    <th>Phone</th>
-                    <th>Status</th>
-                    <th>Last Activity</th>
-                    <th class="text-end">Action</th>
-                  </tr>
-                </thead>
-                <tbody id="sessionRows"></tbody>
-              </table>
-            </div>
-          </div>
-        </section>
-
-        <aside class="col-12 col-xl-5">
-          <div class="qr-panel mb-4">
-            <div class="d-flex justify-content-between align-items-center px-3 py-2 border-bottom">
-              <h2 class="h6 mb-0">QR Code</h2>
-              <span id="activeQrSession" class="text-muted small">-</span>
-            </div>
-            <div class="qr-stage">
-              <img id="qrImage" class="qr-image d-none" alt="WhatsApp QR Code" />
-              <div id="qrEmpty" class="text-muted">Pilih session untuk QR.</div>
-            </div>
-          </div>
-
-          <div class="form-panel mb-4">
-            <h2 class="h6 px-3 pt-3 mb-3">Send Message</h2>
-            <form id="sendMessageForm" class="px-3 pb-3">
-              <div class="row g-2">
-                <div class="col-12 col-md-5">
+              <form id="createSessionForm" class="row g-2 align-items-center panel-body">
+                <div class="col-12 col-md">
                   <input
-                    id="sendSession"
+                    id="sessionName"
                     class="form-control"
-                    list="sessionOptions"
-                    placeholder="Pilih / ketik session"
+                    type="text"
+                    placeholder="Nama session"
                     autocomplete="off"
                   />
                 </div>
-                <div class="col-12 col-md-7">
-                  <input id="sendPhone" class="form-control" placeholder="628123456789" />
+                <div class="col-12 col-md-auto">
+                  <button class="btn btn-success w-100" type="submit">Create Session</button>
                 </div>
-                <div class="col-12">
-                  <textarea id="sendText" class="form-control" rows="3" placeholder="Pesan"></textarea>
+              </form>
+            </div>
+
+            <div class="table-shell">
+              <div class="panel-heading">
+                <div>
+                  <p class="section-kicker">Realtime</p>
+                  <h2>Sessions</h2>
                 </div>
-                <div class="col-12">
-                  <button class="btn btn-success w-100" type="submit">Send</button>
+                <button id="refreshSessions" class="btn btn-outline-secondary btn-sm" type="button">Refresh</button>
+              </div>
+              <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                  <thead>
+                    <tr>
+                      <th>Session</th>
+                      <th>Phone</th>
+                      <th>Status</th>
+                      <th>Last Activity</th>
+                      <th class="text-end">Action</th>
+                    </tr>
+                  </thead>
+                  <tbody id="sessionRows"></tbody>
+                </table>
+              </div>
+            </div>
+          </section>
+
+          <aside class="col-12 col-xl-4 col-xxl-3">
+            <div class="qr-panel mb-3">
+              <div class="panel-heading">
+                <div>
+                  <p class="section-kicker">Pairing</p>
+                  <h2>QR Code</h2>
+                </div>
+                <span id="activeQrSession" class="text-muted small">-</span>
+              </div>
+              <div class="qr-stage">
+                <img id="qrImage" class="qr-image d-none" alt="WhatsApp QR Code" />
+                <div id="qrEmpty" class="empty-state">Pilih session untuk QR.</div>
+              </div>
+            </div>
+
+            <div class="form-panel mb-3">
+              <div class="panel-heading">
+                <div>
+                  <p class="section-kicker">Single Message</p>
+                  <h2>Send Message</h2>
                 </div>
               </div>
-            </form>
-          </div>
-
-          <div class="form-panel">
-            <h2 class="h6 px-3 pt-3 mb-3">Webhook</h2>
-            <form id="webhookForm" class="px-3 pb-3">
-              <div class="row g-2">
-                <div class="col">
-                  <input id="webhookUrl" class="form-control" placeholder="https://example.com/webhook" />
-                </div>
-                <div class="col-auto">
-                  <button class="btn btn-outline-success" type="submit">Add</button>
-                </div>
-              </div>
-            </form>
-            <div id="webhookList" class="list-group list-group-flush"></div>
-          </div>
-        </aside>
-
-        <section class="col-12">
-          <div class="table-shell">
-            <div class="d-flex justify-content-between align-items-center px-3 py-2 border-bottom">
-              <div class="d-flex flex-wrap align-items-center gap-2">
-                <h2 class="h6 mb-0">Contacts & Broadcast</h2>
-                <div class="pager-controls">
-                  <label class="form-label mb-0 small text-muted" for="contactPageSize">Show</label>
-                  <select id="contactPageSize" class="form-select form-select-sm pager-size">
-                    <option value="10" selected>10</option>
-                    <option value="20">20</option>
-                    <option value="50">50</option>
-                    <option value="100">100</option>
-                    <option value="500">500</option>
-                    <option value="1000">1000</option>
-                    <option value="all">All</option>
-                  </select>
-                  <span id="contactPageInfo" class="small text-muted">-</span>
-                  <div class="btn-group btn-group-sm" role="group" aria-label="Contact pagination">
-                    <button id="contactPrevPage" class="btn btn-outline-secondary" type="button">Prev</button>
-                    <button id="contactNextPage" class="btn btn-outline-secondary" type="button">Next</button>
+              <form id="sendMessageForm" class="panel-body">
+                <div class="row g-2">
+                  <div class="col-12 col-md-5">
+                    <input
+                      id="sendSession"
+                      class="form-control"
+                      list="sessionOptions"
+                      placeholder="Pilih / ketik session"
+                      autocomplete="off"
+                    />
+                  </div>
+                  <div class="col-12 col-md-7">
+                    <input id="sendPhone" class="form-control" placeholder="628123456789" />
+                  </div>
+                  <div class="col-12">
+                    <textarea id="sendText" class="form-control" rows="3" placeholder="Pesan"></textarea>
+                  </div>
+                  <div class="col-12">
+                    <button class="btn btn-success w-100" type="submit">Send</button>
                   </div>
                 </div>
-              </div>
-              <div class="d-flex flex-wrap gap-2">
-                <button id="downloadContactTemplate" class="btn btn-outline-secondary btn-sm" type="button">
-                  Template
-                </button>
-                <button id="exportContacts" class="btn btn-outline-secondary btn-sm" type="button">Export</button>
-                <button id="refreshContacts" class="btn btn-outline-secondary btn-sm" type="button">Refresh</button>
-                <button id="clearContacts" class="btn btn-outline-danger btn-sm" type="button">Clear</button>
-              </div>
+              </form>
             </div>
-            <div class="p-3 border-bottom">
-              <div class="row g-3">
-                <div class="col-12">
-                  <form id="manualContactForm" class="row g-2 align-items-center">
-                    <div class="col-12 col-md-4">
-                      <input id="manualContactName" class="form-control" placeholder="Nama" autocomplete="off" />
-                    </div>
-                    <div class="col-12 col-md-4">
-                      <input id="manualContactPhone" class="form-control" placeholder="No telp, contoh 628123456789" autocomplete="off" />
-                    </div>
-                    <div class="col-12 col-md-auto">
-                      <button class="btn btn-success w-100" type="submit">Add Contact</button>
-                    </div>
-                  </form>
-                </div>
-                <div class="col-12 col-lg-5">
-                  <form id="importContactsForm" class="row g-2">
-                    <div class="col">
-                      <input id="contactFile" class="form-control" type="file" accept=".xlsx,.xls" />
-                    </div>
-                    <div class="col-auto">
-                      <button class="btn btn-success" type="submit">Import Excel</button>
-                    </div>
-                  </form>
-                </div>
-                <div class="col-12 col-lg-7">
-                  <form id="broadcastForm" class="row g-2">
-                    <div class="col-12 col-md-3">
-                      <input
-                        id="broadcastSession"
-                        class="form-control"
-                        list="sessionOptions"
-                        placeholder="Pilih / ketik session"
-                        autocomplete="off"
-                      />
-                    </div>
-                    <div class="col-12 col-md">
-                      <input id="broadcastMessage" class="form-control" placeholder="Pesan, contoh: Halo {nama}" />
-                    </div>
-                    <div class="col-6 col-md-2">
-                      <input id="broadcastDelay" class="form-control" type="number" value="1500" min="500" step="500" />
-                    </div>
-                    <div class="col-6 col-md-auto">
-                      <button class="btn btn-success w-100" type="submit">Broadcast</button>
-                    </div>
-                  </form>
-                </div>
-              </div>
-            </div>
-            <div class="table-responsive">
-              <table class="table table-sm align-middle mb-0">
-                <thead>
-                  <tr>
-                    <th>Nama</th>
-                    <th>No telp</th>
-                    <th>Updated</th>
-                    <th class="text-end">Action</th>
-                  </tr>
-                </thead>
-                <tbody id="contactRows"></tbody>
-              </table>
-            </div>
-          </div>
-        </section>
 
-        <section class="col-12">
-          <div class="table-shell">
-            <div class="d-flex justify-content-between align-items-center px-3 py-2 border-bottom">
-              <div class="d-flex flex-wrap align-items-center gap-2">
-                <h2 class="h6 mb-0">Message Log</h2>
-                <div class="pager-controls">
-                  <label class="form-label mb-0 small text-muted" for="messagePageSize">Show</label>
-                  <select id="messagePageSize" class="form-select form-select-sm pager-size">
-                    <option value="10" selected>10</option>
-                    <option value="20">20</option>
-                    <option value="50">50</option>
-                    <option value="100">100</option>
-                    <option value="500">500</option>
-                    <option value="1000">1000</option>
-                    <option value="all">All</option>
-                  </select>
-                  <span id="messagePageInfo" class="small text-muted">-</span>
-                  <div class="btn-group btn-group-sm" role="group" aria-label="Message pagination">
-                    <button id="messagePrevPage" class="btn btn-outline-secondary" type="button">Prev</button>
-                    <button id="messageNextPage" class="btn btn-outline-secondary" type="button">Next</button>
+            <div class="form-panel">
+              <div class="panel-heading">
+                <div>
+                  <p class="section-kicker">Callback</p>
+                  <h2>Webhook</h2>
+                </div>
+              </div>
+              <form id="webhookForm" class="panel-body">
+                <div class="row g-2">
+                  <div class="col">
+                    <input id="webhookUrl" class="form-control" placeholder="https://example.com/webhook" />
+                  </div>
+                  <div class="col-auto">
+                    <button class="btn btn-outline-success" type="submit">Add</button>
                   </div>
                 </div>
-              </div>
-              <div class="d-flex gap-2">
-                <button id="refreshMessages" class="btn btn-outline-secondary btn-sm" type="button">Refresh</button>
-                <button id="clearMessages" class="btn btn-outline-danger btn-sm" type="button">Clear</button>
+              </form>
+              <div id="webhookList" class="list-group list-group-flush"></div>
+            </div>
+          </aside>
+        </div>
+      </section>
+
+      <section id="broadcastView" class="dashboard-view" data-dashboard-view hidden>
+        <div class="table-shell">
+          <div class="panel-heading panel-heading-main">
+            <div>
+              <p class="section-kicker">Audience</p>
+              <h2>Contacts & Broadcast</h2>
+            </div>
+            <div class="pager-controls panel-filter">
+              <label class="form-label mb-0 small text-muted" for="contactPageSize">Show</label>
+              <select id="contactPageSize" class="form-select form-select-sm pager-size">
+                <option value="10" selected>10</option>
+                <option value="20">20</option>
+                <option value="50">50</option>
+                <option value="100">100</option>
+                <option value="500">500</option>
+                <option value="1000">1000</option>
+                <option value="all">All</option>
+              </select>
+              <span id="contactPageInfo" class="small text-muted">-</span>
+              <div class="btn-group btn-group-sm" role="group" aria-label="Contact pagination">
+                <button id="contactPrevPage" class="btn btn-outline-secondary" type="button">Prev</button>
+                <button id="contactNextPage" class="btn btn-outline-secondary" type="button">Next</button>
               </div>
             </div>
-            <div class="table-responsive">
-              <table class="table table-sm align-middle mb-0">
-                <thead>
-                  <tr>
-                    <th>Time</th>
-                    <th>Session</th>
-                    <th>Direction</th>
-                    <th>Phone</th>
-                    <th>Message</th>
-                    <th>Status</th>
-                    <th class="text-end">Action</th>
-                  </tr>
-                </thead>
-                <tbody id="messageRows"></tbody>
-              </table>
+            <div class="view-actions panel-actions">
+              <button id="downloadContactTemplate" class="btn btn-outline-secondary btn-sm" type="button">Template</button>
+              <button id="exportContacts" class="btn btn-outline-secondary btn-sm" type="button">Export</button>
+              <button id="refreshContacts" class="btn btn-outline-secondary btn-sm" type="button">Refresh</button>
+              <button id="clearContacts" class="btn btn-outline-danger btn-sm" type="button">Clear</button>
             </div>
           </div>
-        </section>
-      </div>
+
+          <div class="panel-body border-bottom">
+            <div class="row g-3">
+              <div class="col-12">
+                <form id="manualContactForm" class="row g-2 align-items-center">
+                  <div class="col-12 col-md-4">
+                    <input id="manualContactName" class="form-control" placeholder="Nama" autocomplete="off" />
+                  </div>
+                  <div class="col-12 col-md-4">
+                    <input id="manualContactPhone" class="form-control" placeholder="No telp, contoh 628123456789" autocomplete="off" />
+                  </div>
+                  <div class="col-12 col-md-auto">
+                    <button class="btn btn-success w-100" type="submit">Add Contact</button>
+                  </div>
+                </form>
+              </div>
+              <div class="col-12 col-lg-5">
+                <form id="importContactsForm" class="row g-2">
+                  <div class="col">
+                    <input id="contactFile" class="form-control" type="file" accept=".xlsx,.xls" />
+                  </div>
+                  <div class="col-auto">
+                    <button class="btn btn-success" type="submit">Import Excel</button>
+                  </div>
+                </form>
+              </div>
+              <div class="col-12 col-lg-7">
+                <form id="broadcastForm" class="row g-2">
+                  <div class="col-12 col-md-3">
+                    <input
+                      id="broadcastSession"
+                      class="form-control"
+                      list="sessionOptions"
+                      placeholder="Pilih / ketik session"
+                      autocomplete="off"
+                    />
+                  </div>
+                  <div class="col-12 col-md">
+                    <input id="broadcastMessage" class="form-control" placeholder="Pesan, contoh: Halo {nama}" />
+                  </div>
+                  <div class="col-6 col-md-2">
+                    <input id="broadcastDelay" class="form-control" type="number" value="1500" min="500" step="500" />
+                  </div>
+                  <div class="col-6 col-md-auto">
+                    <button class="btn btn-success w-100" type="submit">Broadcast</button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          </div>
+
+          <div class="table-responsive">
+            <table class="table table-sm align-middle mb-0">
+              <thead>
+                <tr>
+                  <th>Nama</th>
+                  <th>No telp</th>
+                  <th>Updated</th>
+                  <th class="text-end">Action</th>
+                </tr>
+              </thead>
+              <tbody id="contactRows"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <section id="logView" class="dashboard-view" data-dashboard-view hidden>
+        <div class="table-shell">
+          <div class="panel-heading panel-heading-main">
+            <div>
+              <p class="section-kicker">History</p>
+              <h2>Message Log</h2>
+            </div>
+            <div class="pager-controls panel-filter">
+              <label class="form-label mb-0 small text-muted" for="messagePageSize">Show</label>
+              <select id="messagePageSize" class="form-select form-select-sm pager-size">
+                <option value="10" selected>10</option>
+                <option value="20">20</option>
+                <option value="50">50</option>
+                <option value="100">100</option>
+                <option value="500">500</option>
+                <option value="1000">1000</option>
+                <option value="all">All</option>
+              </select>
+              <span id="messagePageInfo" class="small text-muted">-</span>
+              <div class="btn-group btn-group-sm" role="group" aria-label="Message pagination">
+                <button id="messagePrevPage" class="btn btn-outline-secondary" type="button">Prev</button>
+                <button id="messageNextPage" class="btn btn-outline-secondary" type="button">Next</button>
+              </div>
+            </div>
+            <div class="view-actions panel-actions">
+              <button id="refreshMessages" class="btn btn-outline-secondary btn-sm" type="button">Refresh</button>
+              <button id="clearMessages" class="btn btn-outline-danger btn-sm" type="button">Clear</button>
+            </div>
+          </div>
+          <div class="table-responsive">
+            <table class="table table-sm align-middle mb-0">
+              <thead>
+                <tr>
+                  <th>Time</th>
+                  <th>Session</th>
+                  <th>Direction</th>
+                  <th>Phone</th>
+                  <th>Message</th>
+                  <th>Status</th>
+                  <th class="text-end">Action</th>
+                </tr>
+              </thead>
+              <tbody id="messageRows"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
     </main>
 
     <datalist id="sessionOptions"></datalist>
@@ -342,6 +427,26 @@
               <button type="submit" class="btn btn-success">Save</button>
             </div>
           </form>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal fade" id="confirmModal" tabindex="-1" aria-hidden="true">
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h2 id="confirmModalTitle" class="modal-title h6">Konfirmasi</h2>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body">
+            <p id="confirmModalMessage" class="mb-0 text-muted"></p>
+          </div>
+          <div class="modal-footer">
+            <button id="confirmModalCancel" type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">
+              Cancel
+            </button>
+            <button id="confirmModalConfirm" type="button" class="btn btn-danger">Clear</button>
+          </div>
         </div>
       </div>
     </div>
